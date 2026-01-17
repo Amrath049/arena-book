@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//enum SlotStatus {
+//  AVAILABLE
+//  BOOKED
+//  BLOCKED
+//}
+
+//enum BookingStatus {
+//  CONFIRMED
+//  CANCELLED
+//}
+
+//enum TransactionType {
+//  CREDIT
+//  DEBIT
+//}
+
+model User {
+  id        String   @id @default(uuid())
+  phone     String   @unique
+  name      String?
+  email     String   @unique
+  walletBalance   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  registeredSource String?
+
+  arenas    Arena[]
+  walletTx  WalletTransaction[]
+}
+
+model Player {
+  id        String   @id @default(uuid())
+  phone     String   @unique
+  name      String?
+  email     String   @unique
+  walletBalance Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  registeredSource String?
+
+  bookings  Booking[]
+  walletTx  WalletTransaction[]
+  favourites FavouriteArena[]
+}
+
+model Arena {
+  id          String   @id @default(uuid())
+  ownerId     String
+  name        String
+  description String?
+  address     String
+  city        String
+  latitude    Float?
+  longitude   Float?
+  images      String[]
+  isActive    Boolean  @default(true)
+
+  terms       String?
+  customMsg   String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  owner      User     @relation(fields: [ownerId], references: [id])
+  courts     Court[]
+  favourites FavouriteArena[]
+}
+
+model Court {
+  id          String   @id @default(uuid())
+  arenaId     String
+  gameType    String   // Badminton, Cricket, etc
+  name        String
+  slotMinutes Int
+  isActive    Boolean  @default(true)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  arena       Arena    @relation(fields: [arenaId], references: [id])
+  slots       Slot[]
+}
+
+model Slot {
+  id        String     @id @default(uuid())
+  courtId   String
+  date      DateTime
+  startTime DateTime
+  endTime   DateTime
+  price     Int
+  status    String @default("AVAILABLE")
+
+  court     Court      @relation(fields: [courtId], references: [id])
+  booking   Booking?
+}
+
+model Booking {
+  id        String        @id @default(uuid())
+  playerId  String
+  slotId    String        @unique
+  amount    Int
+  status    String @default("CONFIRMED")
+  createdAt DateTime      @default(now())
+
+  player    Player       @relation(fields: [playerId], references: [id])
+  slot      Slot         @relation(fields: [slotId], references: [id])
+}
+
+model WalletTransaction {
+  id        String          @id @default(uuid())
+  playerId  String?
+  userId    String?
+  
+  amount    Int
+  type      String  //DEBIT, CREDIT
+  source    String  //BOOKING | REFUND | MANUAL | SETTLEMENT
+  isAdmin   Boolean  @default(false)
+  referenceId String?
+  createdAt DateTime        @default(now())
+  reason    String?
+
+  player    Player?         @relation(fields: [playerId], references: [id])
+  user      User?           @relation(fields: [userId], references: [id])
+} 
+
+model FavouriteArena {
+  id        String @id @default(uuid())
+  playerId  String
+  arenaId   String
+
+  player    Player @relation(fields: [playerId], references: [id])
+  arena     Arena  @relation(fields: [arenaId], references: [id])
+
+  @@unique([playerId, arenaId])
+}
