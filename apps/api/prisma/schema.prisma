@@ -31,9 +31,10 @@ datasource db {
 
 model User {
   id        String   @id @default(uuid())
-  phone     String   @unique
+  phone     String?   @unique
   name      String?
-  email     String?
+  email     String? @unique
+  password  String?
 
   walletBalance   Int      @default(0)
 
@@ -44,13 +45,15 @@ model User {
 
   arenas    Arena[]
   walletTx  WalletTransaction[]
+  otps      Otp[]
 }
 
 model Player {
   id        String   @id @default(uuid())
-  phone     String   @unique
+  phone     String?   @unique
   name      String?
-  email     String?
+  email     String?  @unique
+  password  String?
 
   walletBalance Int      @default(0)
 
@@ -62,6 +65,7 @@ model Player {
   bookings  Booking[]
   walletTx  WalletTransaction[]
   favourites FavouriteArena[]
+  otps      Otp[]
 }
 
 model Arena {
@@ -241,4 +245,30 @@ model FavouriteArena {
   arena     Arena  @relation(fields: [arenaId], references: [id])
 
   @@unique([playerId, arenaId])
+}
+
+model Otp {
+  id        String   @id @default(uuid())
+  
+  playerId  String?
+  userId    String?
+  
+  email     String   // Keep for reference
+  otpHash   String   // Hashed OTP
+  attempts  Int      @default(0)
+  userType  String   // PLAYER | USER
+  
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  player    Player?  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([userId])
+  @@index([email, userType])
+  @@index([expiresAt])
 }
