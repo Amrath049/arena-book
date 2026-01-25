@@ -33,12 +33,14 @@ model User {
   id        String   @id @default(uuid())
   phone     String   @unique
   name      String?
-  email     String   @unique
+  email     String?
+
   walletBalance   Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   registeredSource String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   arenas    Arena[]
   walletTx  WalletTransaction[]
@@ -48,13 +50,14 @@ model Player {
   id        String   @id @default(uuid())
   phone     String   @unique
   name      String?
-  email     String   @unique
+  email     String?
+
   walletBalance Int      @default(0)
+
+  registeredSource String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  registeredSource String?
 
   bookings  Booking[]
   walletTx  WalletTransaction[]
@@ -64,12 +67,17 @@ model Player {
 model Arena {
   id          String   @id @default(uuid())
   ownerId     String
+
   name        String
   description String?
   address     String
   city        String
+  phone       String?
+  email       String?
+
   latitude    Float?
   longitude   Float?
+
   images      String[]
   isActive    Boolean  @default(true)
 
@@ -80,69 +88,152 @@ model Arena {
   updatedAt  DateTime @updatedAt
 
   owner      User     @relation(fields: [ownerId], references: [id])
-  courts     Court[]
+
+  bookings   Booking[]
   favourites FavouriteArena[]
+  gameTypes  GameType[]
+
+  @@index([city])
+  @@index([isActive])
+}
+
+model GameType {
+  id          String   @id @default(uuid())
+  name        String
+  isActive    Boolean?  @default(true)
+  arenaId     String
+
+  arena       Arena    @relation(fields: [arenaId], references: [id])
+
+  courts      Court[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Court {
   id          String   @id @default(uuid())
-  arenaId     String
-  gameType    String   // Badminton, Cricket, etc
+
   name        String
-  slotMinutes Int
+  gameTypeId  String
+  
   isActive    Boolean  @default(true)
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  arena       Arena    @relation(fields: [arenaId], references: [id])
+  gameType    GameType @relation(fields: [gameTypeId], references: [id])
+
+  slotDefs    SlotDefinitionGroups[]
+  bookings    Booking[]
   slots       Slot[]
 }
 
+model SlotDefinitionGroups {
+  id        String   @id @default(uuid())
+
+  courtId  String
+
+  date      DateTime?
+
+  dayType   String   // WEEKDAY | WEEKEND (need to remove)| CUSTOM | SUNDAY to SATURDAY
+  price     Int?
+
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  court     Court @relation(fields: [courtId], references: [id])
+
+  slotDefs  SlotDefinition[]
+
+  @@unique([courtId, dayType])
+}
+
+model SlotDefinition {
+  id        String   @id @default(uuid())
+
+  slotDefGroupId String
+
+  startTime String   // "06:00"
+  endTime   String   // "07:00"
+  date      DateTime?
+  price     Int?
+
+  slotDefGroup     SlotDefinitionGroups @relation(fields: [slotDefGroupId], references: [id])
+}
+
+
 model Slot {
   id        String     @id @default(uuid())
+
   courtId   String
+
   date      DateTime
   startTime DateTime
   endTime   DateTime
+
   price     Int
-  status    String @default("AVAILABLE")
+  status    String @default("AVAILABLE") // AVAILABLE | BOOKED | BLOCKED
 
   court     Court      @relation(fields: [courtId], references: [id])
   booking   Booking?
+
+  @@unique([courtId, date, startTime])
 }
 
 model Booking {
   id        String        @id @default(uuid())
-  playerId  String
-  slotId    String        @unique
-  amount    Int
-  status    String @default("CONFIRMED")
-  createdAt DateTime      @default(now())
 
+  playerId  String
+  arenaId   String
+  slotId    String        @unique
+  courtId   String
+  
+  price    Int
+  status    String  // CONFIRMED | CANCELLED | REFUNDED |COMPLETED
+  reason    String?
+
+  createdAt DateTime      @default(now())
+ 
   player    Player       @relation(fields: [playerId], references: [id])
   slot      Slot         @relation(fields: [slotId], references: [id])
+  arena     Arena        @relation(fields: [arenaId], references: [id])
+  court     Court        @relation(fields: [courtId], references: [id])
+
+  @@index([arenaId, createdAt])
+  @@index([status])
 }
 
 model WalletTransaction {
   id        String          @id @default(uuid())
+
   playerId  String?
   userId    String?
   
   amount    Int
   type      String  //DEBIT, CREDIT
   source    String  //BOOKING | REFUND | MANUAL | SETTLEMENT
-  isAdmin   Boolean  @default(false)
+
   referenceId String?
-  createdAt DateTime        @default(now())
   reason    String?
+
+  isAdmin   Boolean  @default(false)
+
+  createdAt DateTime        @default(now())
 
   player    Player?         @relation(fields: [playerId], references: [id])
   user      User?           @relation(fields: [userId], references: [id])
+
+  @@index([playerId])
+  @@index([userId])
+  @@index([createdAt])
 } 
 
 model FavouriteArena {
   id        String @id @default(uuid())
+
   playerId  String
   arenaId   String
 
