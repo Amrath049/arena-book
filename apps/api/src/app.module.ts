@@ -5,12 +5,16 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { HealthController } from './health/health.controller';
 import { AuthModule } from './modules/auth/auth.module';
+import { ArenaModule } from './modules/arena/arena.module';
+import { GamesModule } from './modules/games/games.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     AuthModule,
+    ArenaModule,
+    GamesModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],
