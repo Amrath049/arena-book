@@ -1,0 +1,21 @@
+export const SLOT_STATUS = {
+  AVAILABLE: 'AVAILABLE',
+  BOOKED: 'BOOKED',
+  BLOCKED: 'BLOCKED',
+};
+
+export const BOOKING_STATUS = {
+  CONFIRMED: 'CONFIRMED',
+  CANCELLED: 'CANCELLED',
+  REFUNDED: 'REFUNDED',
+};
+
+export const WALLET_TX_TYPE = {
+  DEBIT: 'DEBIT',
+  CREDIT: 'CREDIT',
+};
+
+export const WALLET_SOURCE = {
+  BOOKING: 'BOOKING',
+  REFUND: 'REFUND',
+};

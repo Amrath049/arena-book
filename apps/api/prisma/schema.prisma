@@ -136,7 +136,7 @@ model SlotDefinitionGroups {
 
   date      DateTime?
 
-  dayType   String   // WEEKDAY | WEEKEND (need to remove)| CUSTOM | SUNDAY to SATURDAY
+  dayType   String   //  CUSTOM | SUNDAY to SATURDAY
   price     Int?
 
   isActive  Boolean  @default(true)

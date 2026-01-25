@@ -8,7 +8,8 @@ import { HealthController } from './health/health.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    PrismaModule],
+    PrismaModule
+  ],
   controllers: [AppController, HealthController],
   providers: [AppService],
 })
