@@ -1,0 +1,10 @@
+export { Login } from './Login';
+export { Register } from './Register';
+export { VerifyOTP } from './VerifyOTP';
+export { Dashboard } from './Dashboard';
+export { ArenaManagement } from './ArenaManagement';
+export { GamesManagement } from './GamesManagement';
+export { SlotsAndPricing } from './SlotsAndPricing';
+export { Bookings } from './Bookings';
+export { Transactions } from './Transactions';
+export { Settings } from './Settings';
