@@ -130,7 +130,7 @@ export class AuthService {
       await this.otpService.generateAndSaveOtpForPlayer(
         player.id,
         player.email as string,
-        4,
+        6,
       );
 
     console.log(`Player ${email} OTP: ${otp}`);
@@ -306,7 +306,7 @@ export class AuthService {
     const { otp, expiresAt } = await this.otpService.generateAndSaveOtpForUser(
       user.id,
       user.email as string,
-      4,
+      6,
     );
 
     console.log(`User ${email} OTP: ${otp}`);
