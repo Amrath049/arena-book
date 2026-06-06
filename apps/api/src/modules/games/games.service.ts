@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateCourtDto,
   CreateGameDto,
@@ -211,6 +211,7 @@ export class GamesService {
       data: {
         name,
         gameTypeId,
+        slotDuration: createCourtDto.slotDuration ?? 60,
       },
     });
 

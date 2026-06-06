@@ -1,10 +1,9 @@
 import {
-  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateArenaDto, UpdateArenaDto } from './dto/arena.details.dto';
 
 @Injectable()
@@ -192,20 +191,58 @@ export class ArenaService {
       include: {
         gameTypes: {
           where: { isActive: true },
-          select: {
-            id: true,
-            name: true,
+          select: { id: true, name: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return { count: arenas.length, arenas };
+  }
+
+  async listPublicArenas(city?: string, sport?: string, page = 1, limit = 20) {
+    const where: any = { isActive: true };
+    if (city) where.city = { contains: city, mode: 'insensitive' };
+    if (sport) {
+      where.gameTypes = { some: { name: { contains: sport, mode: 'insensitive' }, isActive: true } };
+    }
+
+    const [arenas, total] = await Promise.all([
+      this.prisma.arena.findMany({
+        where,
+        include: {
+          gameTypes: {
+            where: { isActive: true },
+            select: { id: true, name: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.arena.count({ where }),
+    ]);
+
+    return { arenas, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  async getPublicArenaDetail(arenaId: string) {
+    const arena = await this.prisma.arena.findUnique({
+      where: { id: arenaId, isActive: true },
+      include: {
+        gameTypes: {
+          where: { isActive: true },
+          include: {
+            courts: {
+              where: { isActive: true },
+              select: { id: true, name: true, slotDuration: true, isActive: true },
+            },
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
     });
 
-    return {
-      count: arenas.length,
-      arenas,
-    };
+    if (!arena) throw new NotFoundException('Arena not found');
+    return arena;
   }
 }

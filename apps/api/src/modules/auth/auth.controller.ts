@@ -1,4 +1,3 @@
-// auth/auth.controller.ts
 import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { PlayerLoginDto, playerVerify } from './dto/player.auth.dto';
@@ -11,58 +10,34 @@ export class AuthController {
   // ============ PLAYER ROUTES ============
 
   @Post('player/login')
-  async playerLogin(@Body() loginDto: PlayerLoginDto) {
-    try {
-      return this.authService.playerLogin(loginDto);
-    } catch (error) {
-      throw error;
-    }
+  playerLogin(@Body() loginDto: PlayerLoginDto) {
+    return this.authService.playerLogin(loginDto);
   }
 
   @Post('player/register')
-  async playerRegister(@Body() registerDto: PlayerLoginDto) {
-    try {
-      return this.authService.playerRegister(registerDto);
-    } catch (error) {
-      throw error;
-    }
+  playerRegister(@Body() registerDto: PlayerLoginDto) {
+    return this.authService.playerRegister(registerDto);
   }
 
   @Post('player/verify-otp')
-  async playerVerifyOtp(@Body() verifyOtpDto: playerVerify) {
-    try {
-      return this.authService.playerVerifyOtp(verifyOtpDto);
-    } catch (error) {
-      throw error;
-    }
+  playerVerifyOtp(@Body() verifyOtpDto: playerVerify) {
+    return this.authService.playerVerifyOtp(verifyOtpDto);
   }
 
   // ============ ADMIN ROUTES ============
 
   @Post('admin/login')
-  async adminLogin(@Body() loginDto: AdminLoginDto) {
-    try {
-      return this.authService.adminLogin(loginDto);
-    } catch (error) {
-      throw error;
-    }
+  adminLogin(@Body() loginDto: AdminLoginDto) {
+    return this.authService.adminLogin(loginDto);
   }
 
   @Post('admin/register')
-  async adminRegister(@Body() registerDto: AdminLoginDto) {
-    try {
-      return this.authService.adminRegister(registerDto);
-    } catch (error) {
-      throw error;
-    }
+  adminRegister(@Body() registerDto: AdminLoginDto) {
+    return this.authService.adminRegister(registerDto);
   }
 
   @Post('admin/verify-otp')
-  async adminVerifyOtp(@Body() verifyOtpDto: verifyAdmin) {
-    try {
-      return this.authService.adminVerifyOtp(verifyOtpDto);
-    } catch (error) {
-      throw error;
-    }
+  adminVerifyOtp(@Body() verifyOtpDto: verifyAdmin) {
+    return this.authService.adminVerifyOtp(verifyOtpDto);
   }
 }

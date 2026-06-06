@@ -1,40 +1,53 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wallet, CreditCard, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Wallet, CheckCircle } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/app/components/ui/radio-group';
-import { Label } from '@/app/components/ui/label';
+import { Card, CardContent } from '@/app/components/ui/card';
+import { bookingService } from '@/services/booking.service';
+import { walletService } from '@/services/wallet.service';
 
 export function BookingPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const bookingData = location.state;
-  const [paymentMethod, setPaymentMethod] = useState('wallet');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isBooked, setIsBooked] = useState(false);
 
-  const walletBalance = 1100;
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [processing, setProcessing] = useState(false);
+  const [booked, setBooked] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    walletService.getWallet().then(r => setWalletBalance(r.data?.walletBalance ?? 0)).catch(() => {});
+  }, []);
 
   if (!bookingData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">No booking data found</p>
+        <div className="text-center">
+          <p className="text-gray-500 mb-4">No booking data found</p>
+          <Button onClick={() => navigate('/arenas')}>Browse Arenas</Button>
+        </div>
       </div>
     );
   }
 
-  const { arena, sport, date, slot, price } = bookingData;
+  const { arenaId, arenaName, courtId, courtName, date, startTime, endTime, price } = bookingData;
 
-  const handleConfirmBooking = () => {
-    setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
-      setIsBooked(true);
-    }, 1500);
+  const handleConfirm = async () => {
+    if (walletBalance < price) { setError('Insufficient wallet balance. Please add money to your wallet.'); return; }
+    setProcessing(true);
+    setError('');
+    try {
+      await bookingService.createBooking({ courtId, arenaId, date, startTime, endTime, price });
+      setBooked(true);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Booking failed. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
   };
 
-  if (isBooked) {
+  if (booked) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -43,23 +56,10 @@ export function BookingPage() {
               <CheckCircle className="h-10 w-10 text-green-600" />
             </div>
             <h2 className="text-2xl font-bold mb-2">Booking Confirmed!</h2>
-            <p className="text-gray-600 mb-6">
-              Your slot has been successfully booked. See you at the arena!
-            </p>
+            <p className="text-gray-600 mb-6">Your slot has been booked. See you at the arena!</p>
             <div className="space-y-2">
-              <Button
-                className="w-full"
-                onClick={() => navigate('/dashboard')}
-              >
-                View My Bookings
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => navigate('/')}
-              >
-                Go to Home
-              </Button>
+              <Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => navigate('/dashboard')}>View My Bookings</Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/')}>Back to Home</Button>
             </div>
           </CardContent>
         </Card>
@@ -68,146 +68,52 @@ export function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <Button
-          variant="ghost"
-          className="mb-6"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="container mx-auto max-w-lg">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6">
+          <ArrowLeft className="h-4 w-4" /> Back
+        </button>
+
+        <h1 className="text-2xl font-bold mb-6">Confirm Booking</h1>
+
+        {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>}
+
+        <Card className="mb-4">
+          <CardContent className="p-6 space-y-3">
+            <h3 className="font-bold text-lg">{arenaName}</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between text-gray-600"><span>Court</span><span className="font-medium text-gray-900">{courtName}</span></div>
+              <div className="flex justify-between text-gray-600"><span>Date</span><span className="font-medium text-gray-900">{new Date(date).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
+              <div className="flex justify-between text-gray-600"><span>Time</span><span className="font-medium text-gray-900">{startTime} – {endTime}</span></div>
+              <div className="border-t pt-3 flex justify-between font-semibold"><span>Total Amount</span><span className="text-green-600 text-lg">₹{price}</span></div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <Wallet className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="font-medium">Pay from Wallet</p>
+                <p className="text-sm text-gray-500">Available balance: ₹{walletBalance}</p>
+              </div>
+            </div>
+            {walletBalance < price && (
+              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+                Insufficient balance. You need ₹{price - walletBalance} more.{' '}
+                <button onClick={() => navigate('/dashboard')} className="underline font-medium">Add money</button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Button onClick={handleConfirm} disabled={processing || walletBalance < price}
+          className="w-full bg-green-600 hover:bg-green-700 py-3 text-base disabled:opacity-50">
+          {processing ? 'Processing...' : `Confirm & Pay ₹${price}`}
         </Button>
-
-        <h1 className="text-3xl font-bold mb-8">Confirm Your Booking</h1>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Booking Details */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Booking Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-gray-600">Arena</span>
-                  <span className="font-semibold">{arena.name}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-gray-600">Location</span>
-                  <span className="font-semibold">
-                    {arena.location}, {arena.city}
-                  </span>
-                </div>
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-gray-600">Sport</span>
-                  <span className="font-semibold">{sport}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-gray-600">Date</span>
-                  <span className="font-semibold">
-                    {new Date(date).toLocaleDateString('en-IN', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </span>
-                </div>
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-gray-600">Time Slot</span>
-                  <span className="font-semibold">{slot}</span>
-                </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-gray-600">Duration</span>
-                  <span className="font-semibold">1 hour</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment Method</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <div className="flex items-center space-x-3 border rounded-lg p-4 mb-3">
-                    <RadioGroupItem value="wallet" id="wallet" />
-                    <Label
-                      htmlFor="wallet"
-                      className="flex-1 cursor-pointer flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Wallet className="h-5 w-5 text-green-600" />
-                        <span className="font-semibold">ArenaBook Wallet</span>
-                      </div>
-                      <span className="text-sm text-gray-600">
-                        Balance: ₹{walletBalance}
-                      </span>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 border rounded-lg p-4">
-                    <RadioGroupItem value="online" id="online" />
-                    <Label
-                      htmlFor="online"
-                      className="flex-1 cursor-pointer flex items-center gap-2"
-                    >
-                      <CreditCard className="h-5 w-5 text-blue-600" />
-                      <span className="font-semibold">Pay Online</span>
-                    </Label>
-                  </div>
-                </RadioGroup>
-
-                {paymentMethod === 'wallet' && walletBalance < price && (
-                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                    <p className="text-sm text-red-600">
-                      Insufficient wallet balance. Please recharge your wallet or choose online payment.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Price Summary */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-20">
-              <CardHeader>
-                <CardTitle>Price Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between text-gray-600">
-                  <span>Slot Price (1 hr)</span>
-                  <span>₹{price}</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Platform Fee</span>
-                  <span>₹0</span>
-                </div>
-                <div className="border-t pt-4 flex justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span className="text-green-600">₹{price}</span>
-                </div>
-
-                <Button
-                  className="w-full bg-green-600 hover:bg-green-700"
-                  size="lg"
-                  onClick={handleConfirmBooking}
-                  disabled={
-                    isProcessing ||
-                    (paymentMethod === 'wallet' && walletBalance < price)
-                  }
-                >
-                  {isProcessing ? 'Processing...' : 'Confirm Booking'}
-                </Button>
-
-                <p className="text-xs text-gray-500 text-center">
-                  By confirming, you agree to our terms and conditions
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
       </div>
     </div>
   );

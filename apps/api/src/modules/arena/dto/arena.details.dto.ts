@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsNumber,
   Length,
   MaxLength,
 } from 'class-validator';
@@ -38,6 +39,14 @@ export class CreateArenaDto {
   @IsNotEmpty()
   @IsEmail()
   email: string;
+
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
 
   @IsOptional()
   @IsArray()
@@ -93,6 +102,14 @@ export class UpdateArenaDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
 
   @IsOptional()
   @IsString()

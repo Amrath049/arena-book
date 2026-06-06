@@ -1,283 +1,275 @@
-import { useState } from 'react';
-import { Plus, Calendar, DollarSign, Clock, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, X, ChevronDown, ChevronRight, Lock, Unlock, Trash2 } from 'lucide-react';
+import { gamesService } from '@/services/games.service';
+import { slotsService } from '@/services/slots.service';
+import { arenaService } from '@/services/arena.service';
 
-interface Slot {
-  id: number;
-  courtName: string;
-  gameName: string;
-  startTime: string;
-  endTime: string;
-  price: number;
-  dayType: 'weekday' | 'weekend' | 'all';
-  isBlocked: boolean;
-}
-
-const mockSlots: Slot[] = [
-  { id: 1, courtName: 'Badminton Court 1', gameName: 'Badminton', startTime: '06:00', endTime: '07:00', price: 500, dayType: 'weekday', isBlocked: false },
-  { id: 2, courtName: 'Badminton Court 1', gameName: 'Badminton', startTime: '07:00', endTime: '08:00', price: 600, dayType: 'weekday', isBlocked: false },
-  { id: 3, courtName: 'Badminton Court 1', gameName: 'Badminton', startTime: '18:00', endTime: '19:00', price: 800, dayType: 'weekend', isBlocked: false },
-  { id: 4, courtName: 'Cricket Net 1', gameName: 'Cricket', startTime: '06:00', endTime: '07:00', price: 800, dayType: 'all', isBlocked: false },
-  { id: 5, courtName: 'Cricket Net 1', gameName: 'Cricket', startTime: '19:00', endTime: '20:00', price: 1000, dayType: 'weekend', isBlocked: true },
-];
+const DAY_TYPES = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
 export function SlotsAndPricing() {
-  const [slots, setSlots] = useState<Slot[]>(mockSlots);
-  const [showModal, setShowModal] = useState(false);
-  const [filterGame, setFilterGame] = useState<string>('all');
+  const [arenaId, setArenaId] = useState('');
+  const [games, setGames] = useState<any[]>([]);
+  const [selectedGame, setSelectedGame] = useState('');
+  const [courts, setCourts] = useState<any[]>([]);
+  const [selectedCourt, setSelectedCourt] = useState('');
+  const [groups, setGroups] = useState<any[]>([]);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState('');
 
-  const filteredSlots = filterGame === 'all' 
-    ? slots 
-    : slots.filter(slot => slot.gameName === filterGame);
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [newGroup, setNewGroup] = useState({ dayType: 'MONDAY', price: '' });
+  const [addingGroup, setAddingGroup] = useState(false);
+
+  const [showDefModal, setShowDefModal] = useState<string | null>(null); // groupId
+  const [newDef, setNewDef] = useState({ startTime: '06:00', endTime: '07:00', price: '' });
+  const [addingDef, setAddingDef] = useState(false);
+
+  const flash = (msg: string) => { setMessage(msg); setTimeout(() => setMessage(''), 3000); };
+
+  useEffect(() => {
+    arenaService.getMyArena().then(r => {
+      const id = r.data?.data?.id || r.data?.id;
+      if (id) {
+        setArenaId(id);
+        return gamesService.getGamesByArena(id);
+      }
+    }).then(r => {
+      if (r) setGames(r.data?.games ?? []);
+    }).catch(console.error).finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedGame) { setCourts([]); setSelectedCourt(''); return; }
+    gamesService.getCourtsByGame(selectedGame).then(r => {
+      const c = r.data?.courts ?? [];
+      setCourts(c);
+      if (c.length > 0) setSelectedCourt(c[0].id);
+    }).catch(console.error);
+  }, [selectedGame]);
+
+  useEffect(() => {
+    if (!selectedCourt) { setGroups([]); return; }
+    slotsService.getSlotsByCourt(selectedCourt).then(r => setGroups(r.data ?? [])).catch(console.error);
+  }, [selectedCourt]);
+
+  const refreshGroups = () => {
+    if (selectedCourt) slotsService.getSlotsByCourt(selectedCourt).then(r => setGroups(r.data ?? []));
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpanded(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  };
+
+  const addGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddingGroup(true);
+    try {
+      await slotsService.createGroup({ courtId: selectedCourt, dayType: newGroup.dayType, price: newGroup.price ? Number(newGroup.price) : undefined });
+      setShowGroupModal(false);
+      setNewGroup({ dayType: 'MONDAY', price: '' });
+      flash('Slot group created!');
+      refreshGroups();
+    } catch (err: any) {
+      flash(err.response?.data?.message || 'Failed to create group');
+    } finally {
+      setAddingGroup(false);
+    }
+  };
+
+  const deleteGroup = async (id: string) => {
+    try {
+      await slotsService.deleteGroup(id);
+      flash('Group deleted');
+      refreshGroups();
+    } catch (err: any) {
+      flash(err.response?.data?.message || 'Failed to delete group');
+    }
+  };
+
+  const addDefinition = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!showDefModal) return;
+    setAddingDef(true);
+    try {
+      await slotsService.addDefinition(showDefModal, { startTime: newDef.startTime, endTime: newDef.endTime, price: newDef.price ? Number(newDef.price) : undefined });
+      setShowDefModal(null);
+      setNewDef({ startTime: '06:00', endTime: '07:00', price: '' });
+      flash('Slot time added!');
+      refreshGroups();
+    } catch (err: any) {
+      flash(err.response?.data?.message || 'Failed to add slot');
+    } finally {
+      setAddingDef(false);
+    }
+  };
+
+  const deleteDefinition = async (id: string) => {
+    try {
+      await slotsService.deleteDefinition(id);
+      flash('Slot deleted');
+      refreshGroups();
+    } catch (err: any) {
+      flash(err.response?.data?.message || 'Failed to delete slot');
+    }
+  };
+
+  if (loading) return <div className="animate-pulse space-y-4">{[1,2].map(i => <div key={i} className="bg-white rounded-xl h-32 border border-neutral-200" />)}</div>;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-semibold text-neutral-900">Slots & Pricing</h2>
-          <p className="text-neutral-600 mt-1">Manage slot timings and pricing</p>
-        </div>
-        <div className="flex gap-3">
-          <select
-            value={filterGame}
-            onChange={(e) => setFilterGame(e.target.value)}
-            className="px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-          >
-            <option value="all">All Games</option>
-            <option value="Badminton">Badminton</option>
-            <option value="Cricket">Cricket</option>
-            <option value="Football">Football</option>
+      <div>
+        <h2 className="text-2xl font-semibold text-neutral-900">Slots & Pricing</h2>
+        <p className="text-neutral-600 mt-1">Define slot schedules and pricing for each court</p>
+      </div>
+
+      {message && <div className={`p-3 rounded-lg text-sm ${message.includes('!') ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>{message}</div>}
+
+      <div className="bg-white rounded-xl p-4 border border-neutral-200 flex flex-wrap gap-4">
+        <div className="flex-1 min-w-[180px]">
+          <label className="block text-xs font-medium text-neutral-600 mb-1">Sport</label>
+          <select value={selectedGame} onChange={e => setSelectedGame(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="">Select sport...</option>
+            {games.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
-          <button
-            onClick={() => setShowModal(true)}
-            className="px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 flex items-center gap-2 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Create Slot
-          </button>
         </div>
+        <div className="flex-1 min-w-[180px]">
+          <label className="block text-xs font-medium text-neutral-600 mb-1">Court</label>
+          <select value={selectedCourt} onChange={e => setSelectedCourt(e.target.value)}
+            disabled={!selectedGame || courts.length === 0}
+            className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50">
+            <option value="">Select court...</option>
+            {courts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        {selectedCourt && (
+          <div className="flex items-end">
+            <button onClick={() => setShowGroupModal(true)}
+              className="flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
+              <Plus className="w-4 h-4" /> Add Day Schedule
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Slots Table */}
-      <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-neutral-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 uppercase tracking-wider">
-                  Game / Court
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 uppercase tracking-wider">
-                  Time Slot
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 uppercase tracking-wider">
-                  Day Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 uppercase tracking-wider">
-                  Price
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-neutral-600 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-200">
-              {filteredSlots.map((slot) => (
-                <tr key={slot.id} className="hover:bg-neutral-50">
-                  <td className="px-6 py-4">
-                    <div>
-                      <p className="font-medium text-neutral-900">{slot.courtName}</p>
-                      <p className="text-sm text-neutral-600">{slot.gameName}</p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center text-sm text-neutral-900">
-                      <Clock className="w-4 h-4 mr-2 text-neutral-400" />
-                      {slot.startTime} - {slot.endTime}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      slot.dayType === 'weekend' 
-                        ? 'bg-purple-100 text-purple-700' 
-                        : slot.dayType === 'weekday'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-neutral-100 text-neutral-700'
-                    }`}>
-                      {slot.dayType === 'all' ? 'All Days' : slot.dayType.charAt(0).toUpperCase() + slot.dayType.slice(1)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center text-sm font-medium text-neutral-900">
-                      <DollarSign className="w-4 h-4 mr-1 text-green-600" />
-                      ₹{slot.price}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      slot.isBlocked 
-                        ? 'bg-red-100 text-red-700' 
-                        : 'bg-green-100 text-green-700'
-                    }`}>
-                      {slot.isBlocked ? 'Blocked' : 'Active'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => {
-                          setSlots(slots.map(s => 
-                            s.id === slot.id ? { ...s, isBlocked: !s.isBlocked } : s
-                          ));
-                        }}
-                        className="px-3 py-1.5 text-xs rounded-md bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-medium transition-colors"
-                      >
-                        {slot.isBlocked ? 'Unblock' : 'Block'}
-                      </button>
-                      <button className="px-3 py-1.5 text-xs rounded-md bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium transition-colors">
-                        Edit
-                      </button>
-                      <button className="px-3 py-1.5 text-xs rounded-md bg-red-100 hover:bg-red-200 text-red-700 font-medium transition-colors">
-                        Delete
+      {!selectedCourt ? (
+        <div className="bg-white rounded-xl p-12 border border-neutral-200 text-center">
+          <p className="text-neutral-500">Select a sport and court to manage slots</p>
+        </div>
+      ) : groups.length === 0 ? (
+        <div className="bg-white rounded-xl p-12 border border-neutral-200 text-center">
+          <p className="text-neutral-500">No slot schedules yet. Add a day schedule above.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {groups.map(group => (
+            <div key={group.id} className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+              <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-neutral-50" onClick={() => toggleExpand(group.id)}>
+                <div className="flex items-center gap-3">
+                  {expanded.has(group.id) ? <ChevronDown className="w-5 h-5 text-neutral-400" /> : <ChevronRight className="w-5 h-5 text-neutral-400" />}
+                  <span className="font-semibold text-neutral-900">{group.dayType}</span>
+                  {group.price && <span className="text-sm text-neutral-500">Default: ₹{group.price}</span>}
+                  <span className="text-xs text-neutral-400">{group.slotDefs?.length ?? 0} slots</span>
+                </div>
+                <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => setShowDefModal(group.id)}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 flex items-center gap-1">
+                    <Plus className="w-4 h-4" /> Add Slot
+                  </button>
+                  <button onClick={() => deleteGroup(group.id)} className="p-1.5 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {expanded.has(group.id) && (
+                <div className="border-t border-neutral-200 divide-y divide-neutral-100">
+                  {(!group.slotDefs || group.slotDefs.length === 0) ? (
+                    <p className="px-6 py-4 text-sm text-neutral-500">No slots. Add slots above.</p>
+                  ) : group.slotDefs.map((def: any) => (
+                    <div key={def.id} className="flex items-center justify-between px-6 py-3">
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm font-medium text-neutral-900">{def.startTime} – {def.endTime}</span>
+                        {def.price && <span className="text-sm text-neutral-600">₹{def.price}</span>}
+                      </div>
+                      <button onClick={() => deleteDefinition(def.id)} className="p-1.5 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50">
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
-      </div>
+      )}
 
-      {/* Pricing Quick View */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
-          <div className="flex items-center gap-3 mb-2">
-            <Calendar className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-neutral-900">Weekday Pricing</h3>
-          </div>
-          <p className="text-2xl font-bold text-neutral-900">₹500-800</p>
-          <p className="text-sm text-neutral-600 mt-1">Average per hour</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
-          <div className="flex items-center gap-3 mb-2">
-            <Calendar className="w-5 h-5 text-purple-600" />
-            <h3 className="font-semibold text-neutral-900">Weekend Pricing</h3>
-          </div>
-          <p className="text-2xl font-bold text-neutral-900">₹800-1,200</p>
-          <p className="text-sm text-neutral-600 mt-1">Average per hour</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
-          <div className="flex items-center gap-3 mb-2">
-            <Clock className="w-5 h-5 text-green-600" />
-            <h3 className="font-semibold text-neutral-900">Total Slots</h3>
-          </div>
-          <p className="text-2xl font-bold text-neutral-900">{slots.length}</p>
-          <p className="text-sm text-neutral-600 mt-1">Across all courts</p>
-        </div>
-      </div>
-
-      {/* Create Slot Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      {showGroupModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-neutral-900">Create New Slot</h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-1 rounded-lg hover:bg-neutral-100"
-              >
-                <X className="w-5 h-5 text-neutral-600" />
-              </button>
+              <h3 className="text-lg font-semibold">Add Day Schedule</h3>
+              <button onClick={() => setShowGroupModal(false)}><X className="w-5 h-5 text-neutral-500" /></button>
             </div>
-
-            <div className="space-y-4">
+            <form onSubmit={addGroup} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Select Game *
-                </label>
-                <select className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
-                  <option value="">Choose game</option>
-                  <option value="badminton">Badminton</option>
-                  <option value="cricket">Cricket</option>
-                  <option value="football">Football</option>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Day Type</label>
+                <select value={newGroup.dayType} onChange={e => setNewGroup({ ...newGroup, dayType: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                  {DAY_TYPES.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Select Court *
-                </label>
-                <select className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
-                  <option value="">Choose court</option>
-                  <option value="1">Court 1</option>
-                  <option value="2">Court 2</option>
-                </select>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Default Price (₹) — optional</label>
+                <input type="number" value={newGroup.price} onChange={e => setNewGroup({ ...newGroup, price: e.target.value })}
+                  placeholder="e.g. 500"
+                  className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Start Time *
-                  </label>
-                  <input
-                    type="time"
-                    className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    End Time *
-                  </label>
-                  <input
-                    type="time"
-                    className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Day Type *
-                </label>
-                <select className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
-                  <option value="all">All Days</option>
-                  <option value="weekday">Weekday</option>
-                  <option value="weekend">Weekend</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Price (₹) *
-                </label>
-                <input
-                  type="number"
-                  placeholder="Enter price"
-                  className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-lg border border-neutral-300 text-neutral-700 font-medium hover:bg-neutral-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
-                >
-                  Create Slot
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setShowGroupModal(false)} className="flex-1 py-2.5 rounded-lg border border-neutral-300 text-neutral-700 font-medium hover:bg-neutral-50">Cancel</button>
+                <button type="submit" disabled={addingGroup} className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-60">
+                  {addingGroup ? 'Creating...' : 'Create'}
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showDefModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Add Slot Time</h3>
+              <button onClick={() => setShowDefModal(null)}><X className="w-5 h-5 text-neutral-500" /></button>
             </div>
+            <form onSubmit={addDefinition} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">Start Time</label>
+                  <input type="time" value={newDef.startTime} onChange={e => setNewDef({ ...newDef, startTime: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">End Time</label>
+                  <input type="time" value={newDef.endTime} onChange={e => setNewDef({ ...newDef, endTime: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm" required />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Price (₹) — override group default</label>
+                <input type="number" value={newDef.price} onChange={e => setNewDef({ ...newDef, price: e.target.value })}
+                  placeholder="e.g. 600"
+                  className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+              </div>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setShowDefModal(null)} className="flex-1 py-2.5 rounded-lg border border-neutral-300 text-neutral-700 font-medium hover:bg-neutral-50">Cancel</button>
+                <button type="submit" disabled={addingDef} className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-60">
+                  {addingDef ? 'Adding...' : 'Add Slot'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

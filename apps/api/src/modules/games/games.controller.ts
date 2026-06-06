@@ -3,15 +3,12 @@ import {
   Controller,
   Delete,
   Get,
-  HttpStatus,
   Param,
   Patch,
   Post,
   Request,
-  Response,
   UseGuards,
 } from '@nestjs/common';
-import { GamesService } from './games.service';
 import {
   CreateCourtDto,
   CreateGameDto,
@@ -19,152 +16,63 @@ import {
   UpdateGameDto,
 } from './dto/games.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GamesService } from './games.service';
 
 @Controller('games')
 export class GamesController {
   constructor(private gamesService: GamesService) {}
 
-  // ============ GAME ENDPOINTS ============
-
+  @UseGuards(JwtAuthGuard)
   @Post()
-  @UseGuards(JwtAuthGuard)
-  async createGame(
-    @Request() req,
-    @Body() createGameDto: CreateGameDto,
-    @Response() res,
-  ) {
-    try {
-      const ownerId = req.user.id;
-      const response = await this.gamesService.createGame(
-        ownerId,
-        createGameDto,
-      );
-      return res.status(HttpStatus.CREATED).json({ data: response });
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
+  createGame(@Request() req: any, @Body() dto: CreateGameDto) {
+    return this.gamesService.createGame(req.user.id, dto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
-  async updateGame(
+  updateGame(
     @Param('id') gameId: string,
-    @Request() req,
-    @Body() updateGameDto: UpdateGameDto,
-    @Response() res,
+    @Request() req: any,
+    @Body() dto: UpdateGameDto,
   ) {
-    try {
-      const ownerId = req.user.id;
-      const response = await this.gamesService.updateGame(
-        gameId,
-        ownerId,
-        updateGameDto,
-      );
-      return res.status(HttpStatus.OK).json({ data: response });
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
+    return this.gamesService.updateGame(gameId, req.user.id, dto);
   }
 
-  @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  async deleteGame(
-    @Param('id') gameId: string,
-    @Request() req,
-    @Response() res,
-  ) {
-    try {
-      const ownerId = req.user.id;
-      const response = await this.gamesService.deleteGame(gameId, ownerId);
-      return res.status(HttpStatus.OK).json({ data: response });
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
+  @Delete(':id')
+  deleteGame(@Param('id') gameId: string, @Request() req: any) {
+    return this.gamesService.deleteGame(gameId, req.user.id);
   }
 
   @Get('arena/:arenaId')
-  async getGamesByArena(@Param('arenaId') arenaId: string, @Response() res) {
-    try {
-      const response = await this.gamesService.getGamesByArena(arenaId);
-      return res.status(HttpStatus.OK).json({ data: response });
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
+  getGamesByArena(@Param('arenaId') arenaId: string) {
+    return this.gamesService.getGamesByArena(arenaId);
   }
 
-  // ============ COURT ENDPOINTS ============
-
+  @UseGuards(JwtAuthGuard)
   @Post('courts')
-  @UseGuards(JwtAuthGuard)
-  async createCourt(
-    @Request() req,
-    @Body() createCourtDto: CreateCourtDto,
-    @Response() res,
-  ) {
-    try {
-      const ownerId = req.user.id;
-      const response = await this.gamesService.createCourt(
-        ownerId,
-        createCourtDto,
-      );
-      return res.status(HttpStatus.CREATED).json({ data: response });
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
+  createCourt(@Request() req: any, @Body() dto: CreateCourtDto) {
+    return this.gamesService.createCourt(req.user.id, dto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch('courts/:id')
-  @UseGuards(JwtAuthGuard)
-  async updateCourt(
+  updateCourt(
     @Param('id') courtId: string,
-    @Request() req,
-    @Body() updateCourtDto: UpdateCourtDto,
-    @Response() res,
+    @Request() req: any,
+    @Body() dto: UpdateCourtDto,
   ) {
-    try {
-      const ownerId = req.user.id;
-      const response = await this.gamesService.updateCourt(
-        courtId,
-        ownerId,
-        updateCourtDto,
-      );
-      return res.status(HttpStatus.OK).json({ data: response });
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
+    return this.gamesService.updateCourt(courtId, req.user.id, dto);
   }
 
-  @Delete('courts/:id')
   @UseGuards(JwtAuthGuard)
-  async deleteCourt(
-    @Param('id') courtId: string,
-    @Request() req,
-    @Response() res,
-  ) {
-    try {
-      const ownerId = req.user.id;
-      const response = await this.gamesService.deleteCourt(courtId, ownerId);
-      return res.status(HttpStatus.OK).json({ data: response });
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
+  @Delete('courts/:id')
+  deleteCourt(@Param('id') courtId: string, @Request() req: any) {
+    return this.gamesService.deleteCourt(courtId, req.user.id);
   }
 
   @Get('courts/game/:gameId')
-  async getCourtsByGame(@Param('gameId') gameTypeId: string, @Response() res) {
-    try {
-      const response = await this.gamesService.getCourtsByGame(gameTypeId);
-      return res.status(HttpStatus.OK).json({ data: response });
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
+  getCourtsByGame(@Param('gameId') gameTypeId: string) {
+    return this.gamesService.getCourtsByGame(gameTypeId);
   }
 }

@@ -2,12 +2,11 @@ import {
   Body,
   Controller,
   Get,
-  HttpStatus,
   Param,
   Patch,
   Post,
+  Query,
   Request,
-  Response,
   UseGuards,
 } from '@nestjs/common';
 import { ArenaService } from './arena.service';
@@ -18,74 +17,49 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export class ArenaController {
   constructor(private arenaService: ArenaService) {}
 
+  // Public endpoints
+  @Get('public')
+  listPublicArenas(
+    @Query('city') city?: string,
+    @Query('sport') sport?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.arenaService.listPublicArenas(city, sport, Number(page) || 1, Number(limit) || 20);
+  }
+
+  @Get('public/:id')
+  getPublicArenaDetail(@Param('id') arenaId: string) {
+    return this.arenaService.getPublicArenaDetail(arenaId);
+  }
+
+  // Admin endpoints
+  @UseGuards(JwtAuthGuard)
   @Post()
-  @UseGuards(JwtAuthGuard)
-  async createArena(@Request() req, @Body() createArenaDto: CreateArenaDto, @Response() res) {
-    try {
-      const ownerId = req.user.id; // Extract user ID from JWT token
-      const response = await this.arenaService.createArena(ownerId, createArenaDto);
-      return res.status(HttpStatus.OK).json({data: response});
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
+  createArena(@Request() req: any, @Body() createArenaDto: CreateArenaDto) {
+    return this.arenaService.createArena(req.user.id, createArenaDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
-  async updateArena(
-    @Param('id') arenaId: string,
-    @Request() req,
-    @Body() updateArenaDto: UpdateArenaDto,
-    @Response() res,
-  ) {
-    try {
-      const ownerId = req.user.id; // Extract user ID from JWT token
-      const response = await this.arenaService.updateArena(arenaId, ownerId, updateArenaDto);
-      return res.status(HttpStatus.OK).json({data: response});
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
+  updateArena(@Param('id') arenaId: string, @Request() req: any, @Body() updateArenaDto: UpdateArenaDto) {
+    return this.arenaService.updateArena(arenaId, req.user.id, updateArenaDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
+  getArena(@Request() req: any) {
+    return this.arenaService.getArena(req.user.id);
+  }
+
   @UseGuards(JwtAuthGuard)
-  async getArena(@Request() req, @Response() res) {
-    try {
-      const ownerId = req.user.id;
-      const response = await this.arenaService.getArena(ownerId);
-      return res.status(HttpStatus.OK).json({data: response});
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
-  }
-
-   @Get(':id')
-  async getArenaById(@Param('id') arenaId: string, @Response() res) {
-    try {
-      const response = await this.arenaService.getArenaById(arenaId);
-      return res.status(HttpStatus.OK).json({data: response});
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
-  }
-
   @Get('owner/my-arenas')
-  @UseGuards(JwtAuthGuard)
-  async getMyArenas(
-    @Request() req,
-    @Response() res,
-  ) {
-    try {
-      const ownerId = req.user.id;
-      const response = await this.arenaService.getArenasByOwner(ownerId);
-      return res.status(HttpStatus.OK).json({data: response});
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
+  getMyArenas(@Request() req: any) {
+    return this.arenaService.getArenasByOwner(req.user.id);
+  }
+
+  @Get(':id')
+  getArenaById(@Param('id') arenaId: string) {
+    return this.arenaService.getArenaById(arenaId);
   }
 }

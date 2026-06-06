@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -147,7 +146,7 @@ export class AuthService {
   }
 
   async playerVerifyOtp(verifyOtpDto: playerVerify) {
-    const { email, otp, phone ,name} = verifyOtpDto;
+    const { email, otp, phone, name } = verifyOtpDto;
 
     const player = await this.prisma.player.findUnique({
       where: { email },
@@ -171,7 +170,7 @@ export class AuthService {
     // Optionally update player as verified
     await this.prisma.player.update({
       where: { id: player.id },
-      data: { phone ,name},
+      data: { phone, name },
     });
 
     // Auto-login after successful OTP verification
@@ -310,6 +309,8 @@ export class AuthService {
       4,
     );
 
+    console.log(`User ${email} OTP: ${otp}`);
+
     await this.emailService.sendOtpEmail(email, otp, 10);
 
     return {
@@ -321,7 +322,7 @@ export class AuthService {
   }
 
   async adminVerifyOtp(verifyOtpDto: verifyAdmin) {
-    const { email, otp, phone,name } = verifyOtpDto;
+    const { email, otp, phone, name } = verifyOtpDto;
 
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -341,7 +342,7 @@ export class AuthService {
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { phone ,name},
+      data: { phone, name },
     });
 
     // Verify OTP

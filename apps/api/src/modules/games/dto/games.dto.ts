@@ -1,10 +1,12 @@
 import {
   IsBoolean,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
+  Min,
 } from 'class-validator';
 
 // ============ GAME DTOs ============
@@ -42,6 +44,11 @@ export class CreateCourtDto {
   @IsNotEmpty()
   @IsUUID()
   gameTypeId: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(15)
+  slotDuration?: number;
 }
 
 export class UpdateCourtDto {
@@ -53,4 +60,9 @@ export class UpdateCourtDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(15)
+  slotDuration?: number;
 }

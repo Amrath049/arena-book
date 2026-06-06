@@ -1,223 +1,219 @@
-import { useState } from 'react';
-import { Plus, Edit2, Trash2, Gamepad2 } from 'lucide-react';
-
-interface Court {
-  id: number;
-  name: string;
-  slotDuration: number;
-}
-
-interface Game {
-  id: number;
-  name: string;
-  courts: Court[];
-}
-
-const mockGames: Game[] = [
-  {
-    id: 1,
-    name: 'Badminton',
-    courts: [
-      { id: 1, name: 'Court 1', slotDuration: 60 },
-      { id: 2, name: 'Court 2', slotDuration: 60 },
-      { id: 3, name: 'Court 3', slotDuration: 60 },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Cricket (Nets)',
-    courts: [
-      { id: 4, name: 'Net 1', slotDuration: 60 },
-      { id: 5, name: 'Net 2', slotDuration: 60 },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Football',
-    courts: [
-      { id: 6, name: 'Field 1', slotDuration: 90 },
-    ],
-  },
-];
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { gamesService } from '@/services/games.service';
+import { arenaService } from '@/services/arena.service';
 
 export function GamesManagement() {
-  const [games, setGames] = useState<Game[]>(mockGames);
-  const [showGameModal, setShowGameModal] = useState(false);
-  const [showCourtModal, setShowCourtModal] = useState(false);
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [arenaId, setArenaId] = useState('');
+  const [games, setGames] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [message, setMessage] = useState('');
 
-  const handleAddCourt = (gameId: number) => {
-    setSelectedGame(games.find(g => g.id === gameId) || null);
-    setShowCourtModal(true);
+  // Add Game Modal
+  const [showGameModal, setShowGameModal] = useState(false);
+  const [newGameName, setNewGameName] = useState('');
+  const [addingGame, setAddingGame] = useState(false);
+
+  // Add Court Modal
+  const [showCourtModal, setShowCourtModal] = useState(false);
+  const [courtForGame, setCourtForGame] = useState<string>('');
+  const [newCourt, setNewCourt] = useState({ name: '', slotDuration: 60 });
+  const [addingCourt, setAddingCourt] = useState(false);
+
+  useEffect(() => {
+    arenaService.getMyArena().then(r => {
+      const id = r.data?.data?.id || r.data?.id;
+      if (id) {
+        setArenaId(id);
+        return gamesService.getGamesByArena(id);
+      }
+    }).then(r => {
+      if (r) setGames(r.data?.games ?? []);
+    }).catch(console.error).finally(() => setLoading(false));
+  }, []);
+
+  const refresh = () => {
+    if (!arenaId) return;
+    gamesService.getGamesByArena(arenaId).then(r => setGames(r.data?.games ?? [])).catch(console.error);
   };
+
+  const flash = (msg: string) => { setMessage(msg); setTimeout(() => setMessage(''), 3000); };
+
+  const toggleExpand = (id: string) => {
+    setExpanded(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  };
+
+  const addGame = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddingGame(true);
+    try {
+      await gamesService.createGame({ name: newGameName, arenaId });
+      setShowGameModal(false);
+      setNewGameName('');
+      flash('Game added!');
+      refresh();
+    } catch (err: any) {
+      flash(err.response?.data?.message || 'Failed to add game');
+    } finally {
+      setAddingGame(false);
+    }
+  };
+
+  const deleteGame = async (id: string) => {
+    if (!confirm('Delete this game? All associated courts will be deactivated.')) return;
+    try {
+      await gamesService.deleteGame(id);
+      flash('Game deleted');
+      refresh();
+    } catch (err: any) {
+      flash(err.response?.data?.message || 'Failed to delete game');
+    }
+  };
+
+  const addCourt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddingCourt(true);
+    try {
+      await gamesService.createCourt({ name: newCourt.name, gameTypeId: courtForGame, slotDuration: newCourt.slotDuration });
+      setShowCourtModal(false);
+      setNewCourt({ name: '', slotDuration: 60 });
+      flash('Court added!');
+      refresh();
+    } catch (err: any) {
+      flash(err.response?.data?.message || 'Failed to add court');
+    } finally {
+      setAddingCourt(false);
+    }
+  };
+
+  const deleteCourt = async (id: string) => {
+    try {
+      await gamesService.deleteCourt(id);
+      flash('Court deleted');
+      refresh();
+    } catch (err: any) {
+      flash(err.response?.data?.message || 'Failed to delete court');
+    }
+  };
+
+  if (loading) return <div className="animate-pulse space-y-4">{[1,2].map(i => <div key={i} className="bg-white rounded-xl h-32 border border-neutral-200" />)}</div>;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-neutral-900">Games & Courts</h2>
-          <p className="text-neutral-600 mt-1">Manage games and their courts</p>
+          <p className="text-neutral-600 mt-1">Manage sports and their courts</p>
         </div>
-        <button
-          onClick={() => setShowGameModal(true)}
-          className="px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 flex items-center gap-2 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Add Game
+        <button onClick={() => setShowGameModal(true)}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-blue-700">
+          <Plus className="w-4 h-4" /> Add Sport
         </button>
       </div>
 
-      {/* Games List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {games.map((game) => (
-          <div key={game.id} className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-            {/* Game Header */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 border-b border-neutral-200">
-              <div className="flex items-center justify-between">
+      {message && <div className={`p-3 rounded-lg text-sm ${message.includes('!') ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>{message}</div>}
+
+      {games.length === 0 ? (
+        <div className="bg-white rounded-xl p-12 border border-neutral-200 text-center">
+          <p className="text-neutral-500">No sports added yet. Add your first sport to get started.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {games.map(game => (
+            <div key={game.id} className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+              <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-neutral-50" onClick={() => toggleExpand(game.id)}>
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                    <Gamepad2 className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-neutral-900">{game.name}</h3>
-                    <p className="text-sm text-neutral-600">{game.courts.length} courts</p>
-                  </div>
+                  {expanded.has(game.id) ? <ChevronDown className="w-5 h-5 text-neutral-400" /> : <ChevronRight className="w-5 h-5 text-neutral-400" />}
+                  <span className="font-semibold text-neutral-900">{game.name}</span>
+                  <span className="text-sm text-neutral-500">{game.courts?.length ?? 0} courts</span>
                 </div>
-                <div className="flex gap-2">
-                  <button className="p-2 rounded-lg hover:bg-white/50 transition-colors">
-                    <Edit2 className="w-4 h-4 text-neutral-600" />
+                <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => { setCourtForGame(game.id); setShowCourtModal(true); }}
+                    className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50">
+                    <Plus className="w-4 h-4" /> Add Court
                   </button>
-                  <button className="p-2 rounded-lg hover:bg-white/50 transition-colors">
-                    <Trash2 className="w-4 h-4 text-red-600" />
+                  <button onClick={() => deleteGame(game.id)} className="p-1.5 text-red-500 hover:text-red-600 rounded-lg hover:bg-red-50">
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
-            </div>
 
-            {/* Courts List */}
-            <div className="p-6">
-              <div className="space-y-3">
-                {game.courts.map((court) => (
-                  <div
-                    key={court.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-neutral-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all"
-                  >
-                    <div>
-                      <p className="font-medium text-neutral-900">{court.name}</p>
-                      <p className="text-sm text-neutral-600">
-                        Slot Duration: {court.slotDuration} minutes
-                      </p>
+              {expanded.has(game.id) && (
+                <div className="border-t border-neutral-200">
+                  {(!game.courts || game.courts.length === 0) ? (
+                    <p className="px-6 py-4 text-sm text-neutral-500">No courts yet. Add a court above.</p>
+                  ) : (
+                    <div className="divide-y divide-neutral-100">
+                      {game.courts.map((court: any) => (
+                        <div key={court.id} className="flex items-center justify-between px-6 py-3">
+                          <div>
+                            <span className="text-sm font-medium text-neutral-900">{court.name}</span>
+                            <span className="ml-2 text-xs text-neutral-500">Slot: {court.slotDuration} min</span>
+                          </div>
+                          <button onClick={() => deleteCourt(court.id)} className="p-1.5 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex gap-2">
-                      <button className="p-2 rounded-lg hover:bg-white transition-colors">
-                        <Edit2 className="w-4 h-4 text-neutral-600" />
-                      </button>
-                      <button className="p-2 rounded-lg hover:bg-white transition-colors">
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => handleAddCourt(game.id)}
-                className="w-full mt-4 px-4 py-2.5 border-2 border-dashed border-neutral-300 rounded-lg text-neutral-600 font-medium hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50/50 transition-all flex items-center justify-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                Add Court
-              </button>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Add Game Modal */}
       {showGameModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-xl font-semibold text-neutral-900 mb-4">Add New Game</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Game Name *
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Badminton, Cricket"
-                  className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowGameModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-lg border border-neutral-300 text-neutral-700 font-medium hover:bg-neutral-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => setShowGameModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
-                >
-                  Add Game
-                </button>
-              </div>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Add Sport</h3>
+              <button onClick={() => setShowGameModal(false)}><X className="w-5 h-5 text-neutral-500" /></button>
             </div>
+            <form onSubmit={addGame} className="space-y-4">
+              <input type="text" value={newGameName} onChange={e => setNewGameName(e.target.value)}
+                placeholder="Sport name (e.g. Badminton)"
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm" required />
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setShowGameModal(false)} className="flex-1 py-2.5 rounded-lg border border-neutral-300 text-neutral-700 font-medium hover:bg-neutral-50">Cancel</button>
+                <button type="submit" disabled={addingGame} className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-60">
+                  {addingGame ? 'Adding...' : 'Add Sport'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* Add Court Modal */}
-      {showCourtModal && selectedGame && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-xl font-semibold text-neutral-900 mb-4">
-              Add Court to {selectedGame.name}
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Court Name *
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Court 1, Net 1"
-                  className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Slot Duration (minutes) *
-                </label>
-                <select className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
-                  <option value="30">30 minutes</option>
-                  <option value="60">60 minutes</option>
-                  <option value="90">90 minutes</option>
-                  <option value="120">120 minutes</option>
-                </select>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowCourtModal(false);
-                    setSelectedGame(null);
-                  }}
-                  className="flex-1 px-4 py-2.5 rounded-lg border border-neutral-300 text-neutral-700 font-medium hover:bg-neutral-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    setShowCourtModal(false);
-                    setSelectedGame(null);
-                  }}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
-                >
-                  Add Court
-                </button>
-              </div>
+      {showCourtModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Add Court</h3>
+              <button onClick={() => setShowCourtModal(false)}><X className="w-5 h-5 text-neutral-500" /></button>
             </div>
+            <form onSubmit={addCourt} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Court Name</label>
+                <input type="text" value={newCourt.name} onChange={e => setNewCourt({ ...newCourt, name: e.target.value })}
+                  placeholder="e.g. Court 1"
+                  className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Slot Duration (minutes)</label>
+                <input type="number" value={newCourt.slotDuration} onChange={e => setNewCourt({ ...newCourt, slotDuration: Number(e.target.value) })}
+                  min={15}
+                  className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm" required />
+              </div>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setShowCourtModal(false)} className="flex-1 py-2.5 rounded-lg border border-neutral-300 text-neutral-700 font-medium hover:bg-neutral-50">Cancel</button>
+                <button type="submit" disabled={addingCourt} className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-60">
+                  {addingCourt ? 'Adding...' : 'Add Court'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

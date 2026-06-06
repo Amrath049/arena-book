@@ -7,7 +7,7 @@ export const SLOT_STATUS = {
 export const BOOKING_STATUS = {
   CONFIRMED: 'CONFIRMED',
   CANCELLED: 'CANCELLED',
-  REFUNDED: 'REFUNDED',
+  COMPLETED: 'COMPLETED',
 };
 
 export const WALLET_TX_TYPE = {
@@ -18,4 +18,28 @@ export const WALLET_TX_TYPE = {
 export const WALLET_SOURCE = {
   BOOKING: 'BOOKING',
   REFUND: 'REFUND',
+  MANUAL: 'MANUAL',
+  SETTLEMENT: 'SETTLEMENT',
+  WITHDRAWAL: 'WITHDRAWAL',
+};
+
+export const DAY_TYPES = {
+  MONDAY: 'MONDAY',
+  TUESDAY: 'TUESDAY',
+  WEDNESDAY: 'WEDNESDAY',
+  THURSDAY: 'THURSDAY',
+  FRIDAY: 'FRIDAY',
+  SATURDAY: 'SATURDAY',
+  SUNDAY: 'SUNDAY',
+  CUSTOM: 'CUSTOM',
+};
+
+export const DAY_INDEX_TO_TYPE: Record<number, string> = {
+  0: 'SUNDAY',
+  1: 'MONDAY',
+  2: 'TUESDAY',
+  3: 'WEDNESDAY',
+  4: 'THURSDAY',
+  5: 'FRIDAY',
+  6: 'SATURDAY',
 };
