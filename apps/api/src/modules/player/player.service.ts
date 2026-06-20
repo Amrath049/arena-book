@@ -70,7 +70,14 @@ export class PlayerService {
   }
 
   async getPlayers(ownerId: string, search?: string, page = 1, limit = 20) {
-    const where: any = {};
+    const where: any = {
+      bookings: {
+        some: {
+          arena: { ownerId },
+        },
+      },
+    };
+
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
