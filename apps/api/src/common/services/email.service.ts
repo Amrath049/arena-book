@@ -1,28 +1,16 @@
-// common/email/email.service.ts
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import * as sgMail from '@sendgrid/mail';
 
 @Injectable()
 export class EmailService {
-  private transporter: nodemailer.Transporter;
-
   constructor(private configService: ConfigService) {
-    // Configure email transporter (use your email service)
-    this.transporter = nodemailer.createTransport({
-      host: this.configService.get('EMAIL_HOST'), // e.g., smtp.gmail.com
-      port: this.configService.get('EMAIL_PORT'), // e.g., 587
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: this.configService.get('EMAIL_USER'),
-        pass: this.configService.get('EMAIL_PASSWORD'),
-      },
-    });
+    sgMail.setApiKey(this.configService.get<string>('SENDGRID_API_KEY') as string);
   }
 
   async sendOtpEmail(email: string, otp: string, expiryMinutes: number = 10) {
-    const mailOptions = {
-      from: `"Play Arena" <${this.configService.get('EMAIL_FROM')}>`,
+    await sgMail.send({
+      from: this.configService.get<string>('EMAIL_FROM') as string,
       to: email,
       subject: 'Your OTP Verification Code',
       html: `
@@ -43,13 +31,13 @@ export class EmailService {
             <h2>Email Verification</h2>
             <p>Hello,</p>
             <p>Your One-Time Password (OTP) for verification is:</p>
-            
+
             <div class="otp-box">
               <div class="otp-code">${otp}</div>
             </div>
-            
+
             <p>This OTP is valid for <strong>${expiryMinutes} minutes</strong>.</p>
-            
+
             <div class="warning">
               <p><strong>Security Notice:</strong></p>
               <ul style="text-align: left;">
@@ -58,7 +46,7 @@ export class EmailService {
                 <li>If you didn't request this OTP, please ignore this email</li>
               </ul>
             </div>
-            
+
             <div class="footer">
               <p>This is an automated email. Please do not reply.</p>
               <p>&copy; ${new Date().getFullYear()} Play Arena. All rights reserved.</p>
@@ -67,8 +55,6 @@ export class EmailService {
         </body>
         </html>
       `,
-    };
-
-    await this.transporter.sendMail(mailOptions);
+    });
   }
 }

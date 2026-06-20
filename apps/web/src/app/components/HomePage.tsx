@@ -127,21 +127,28 @@ export function HomePage() {
       </section>
 
       {/* ── Sports categories ── */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Browse by Sport</h2>
-            <p className="text-gray-500">Find arenas for your favourite sport</p>
+          <div className="text-center mb-12">
+            <span className="inline-block bg-green-50 text-green-700 text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full mb-4">Sports</span>
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">Browse by Sport</h2>
+            <p className="text-gray-500 text-lg">Find the perfect arena for your game</p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
             {SPORTS.map(sport => (
               <button
                 key={sport.name}
                 onClick={() => handleSportClick(sport.name)}
-                className={`bg-gradient-to-b ${sport.color} border ${sport.border} rounded-2xl p-6 text-center hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer`}
+                className="group relative bg-white border border-gray-100 rounded-2xl p-6 text-center shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer overflow-hidden"
               >
-                <div className="text-4xl mb-3">{sport.icon}</div>
-                <div className={`font-semibold text-sm ${sport.text}`}>{sport.name}</div>
+                <div className={`absolute inset-0 bg-gradient-to-br ${sport.color} opacity-0 group-hover:opacity-100 transition-opacity duration-200`} />
+                <div className="relative">
+                  <div className="text-5xl mb-4 drop-shadow-sm">{sport.icon}</div>
+                  <div className="font-semibold text-gray-800 group-hover:text-gray-900 text-sm">{sport.name}</div>
+                  <div className={`mt-2 text-xs font-medium ${sport.text} opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
+                    View arenas →
+                  </div>
+                </div>
               </button>
             ))}
           </div>
@@ -287,7 +294,7 @@ export function HomePage() {
             List your arena, manage courts, set pricing — all in one place. Join hundreds of arena owners already on ArenaBook.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/register">
+            <Link to="https://arena-book-admin.vercel.app/" target="_blank" rel="noopener noreferrer">
               <Button size="lg" className="bg-green-600 hover:bg-green-700 px-8 rounded-xl font-semibold">
                 Get Started Free
               </Button>

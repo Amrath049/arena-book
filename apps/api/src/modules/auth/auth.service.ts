@@ -29,7 +29,7 @@ export class AuthService {
     });
 
     if (!player || !player.password) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('User not found, please try to register');
     }
 
     const otpVeified = await this.prisma.otp.findFirst({
