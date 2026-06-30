@@ -86,38 +86,46 @@ export function OtpVerificationPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center py-12 px-4">
-      <div className="w-full max-w-md">
-        <button onClick={() => navigate('/register')} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6">
+    <div className="min-h-[calc(100vh-64px)] bg-slate-50/50 flex flex-col items-center justify-center py-12 px-4 relative overflow-hidden">
+      {/* Background Glows */}
+      <div className="absolute top-10 left-10 w-[500px] h-[500px] bg-emerald-500/[0.02] blur-[130px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-teal-500/[0.015] blur-[110px] rounded-full pointer-events-none" />
+
+      <div className="w-full max-w-md relative z-10">
+        <button onClick={() => navigate('/register')} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors mb-6 text-sm font-medium cursor-pointer">
           <ArrowLeft className="h-4 w-4" /> Back to Register
         </button>
 
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-green-600 mb-2">ArenaBook</h1>
-          <p className="text-gray-600">Verify your account</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 mb-2 tracking-tight">
+            ARENA<span className="text-emerald-600 font-black">BOOK</span>
+          </h1>
+          <p className="text-slate-500 text-sm font-medium">Verify your account</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify OTP</h2>
-          <p className="text-sm text-gray-600 mb-6">OTP sent to <span className="font-medium text-gray-900">{email}</span></p>
+        <div className="bg-white rounded-2xl shadow-xl shadow-slate-100/60 border border-slate-100 p-8">
+          <h2 className="text-xl font-bold text-slate-800 mb-1">Verify OTP</h2>
+          <p className="text-xs text-slate-400 mb-6 font-medium">
+            OTP sent to <span className="font-bold text-slate-700">{email}</span>
+          </p>
 
-          {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>}
+          {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-medium">{error}</div>}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name" className="text-slate-600 font-medium">Full Name</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <Input id="name" type="text" placeholder="John Doe" className="pl-10"
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input id="name" type="text" placeholder="John Doe" className="pl-10 focus-visible:ring-emerald-500"
                   value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="phone" className="text-slate-600 font-medium">Phone Number</Label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <Input id="phone" type="tel" placeholder="9876543210" className="pl-10"
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input id="phone" type="tel" placeholder="9876543210" className="pl-10 focus-visible:ring-emerald-500"
                   value={formData.phone}
                   onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); if (v.length <= 10) setFormData({ ...formData, phone: v }); }}
                   required maxLength={10} />
@@ -125,7 +133,7 @@ export function OtpVerificationPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Enter OTP</Label>
+              <Label className="text-slate-600 font-medium">Enter OTP</Label>
               <div className="flex gap-2 justify-center" onPaste={handlePaste}>
                 {otp.map((digit, index) => (
                   <Input
@@ -134,29 +142,33 @@ export function OtpVerificationPage() {
                     type="text" inputMode="numeric" maxLength={1} value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
-                    className="w-12 h-12 text-center text-xl font-bold"
+                    className="w-12 h-12 text-center text-xl font-bold border-slate-200 focus-visible:ring-emerald-500"
                   />
                 ))}
               </div>
             </div>
 
-            <div className="text-center">
+            <div className="text-center pt-2">
               {!canResend ? (
-                <p className="text-sm text-gray-600">Resend in <span className="font-medium text-green-600">{Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}</span></p>
+                <p className="text-xs text-slate-400 font-medium">
+                  Resend in <span className="font-semibold text-emerald-600">{Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}</span>
+                </p>
               ) : (
-                <button type="button" onClick={handleResend} className="text-sm font-medium text-green-600 hover:text-green-700">Resend OTP</button>
+                <button type="button" onClick={handleResend} className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 cursor-pointer">
+                  Resend OTP
+                </button>
               )}
             </div>
 
-            <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={loading}>
+            <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-md shadow-emerald-600/10 cursor-pointer" disabled={loading}>
               {loading ? 'Verifying...' : 'Verify & Complete Registration'}
             </Button>
           </form>
 
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Mail className="h-4 w-4" />
-              <span>Email: <span className="font-medium text-gray-900">{email}</span></span>
+          <div className="mt-6 p-4 bg-slate-50 border border-slate-100 rounded-xl">
+            <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+              <Mail className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>Email: <span className="font-bold text-slate-700">{email}</span></span>
             </div>
           </div>
         </div>

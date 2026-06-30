@@ -160,7 +160,7 @@ export class EmailService {
           <div class="wrapper">
             <div class="container">
               <div class="header">
-                <h1 class="brand-name">⚡ Arena<span class="brand-accent">Book</span></h1>
+                <h1 class="brand-name">Arena<span class="brand-accent">Book</span></h1>
                 <p class="brand-subtitle">Your Game, Your Court</p>
               </div>
               <div class="body-content">
@@ -173,7 +173,7 @@ export class EmailService {
                   <div class="otp-code">${otp}</div>
                 </div>
                 
-                <p class="expiry-note">⚡ This code is valid for <strong>${expiryMinutes} minutes</strong>.</p>
+                <p class="expiry-note">This code is valid for <strong>${expiryMinutes} minutes</strong>.</p>
                 
                 <div class="divider"></div>
                 
