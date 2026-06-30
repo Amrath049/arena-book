@@ -21,17 +21,7 @@ services:
         sync: false # Admin frontend URL (e.g., Vercel)
       - key: WEB_URL
         sync: false # Customer frontend URL (e.g., Vercel)
-      - key: EMAIL_HOST
-        sync: false
-      - key: EMAIL_PORT
-        sync: false
-      - key: EMAIL_USER
-        sync: false
-      - key: EMAIL_PASSWORD
-        sync: false
       - key: EMAIL_FROM
-        sync: false
-      - key: RESEND_API_KEY
         sync: false
       - key: SENDGRID_API_KEY
         sync: false
