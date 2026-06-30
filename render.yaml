@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: arena-book-api
+    env: node
+    plan: free # Can be updated to starter if needed
+    buildCommand: pnpm install && pnpm build:api
+    startCommand: pnpm start:api
+    # Optional: Run Prisma migrations automatically on every deploy
+    # Uncomment the releaseCommand line below if you want automated database migrations:
+    # releaseCommand: npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # Set this on the Render dashboard to your PostgreSQL URL
+      - key: JWT_SECRET
+        generateValue: true # Generates a random secure secret automatically
+      - key: ADMIN_URL
+        sync: false # Admin frontend URL (e.g., Vercel)
+      - key: WEB_URL
+        sync: false # Customer frontend URL (e.g., Vercel)
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: CASHFREE_APP_ID
+        sync: false
+      - key: CASHFREE_SECRET_KEY
+        sync: false
+      - key: CASHFREE_ENV
+        value: TEST
+      - key: API_URL
+        sync: false # The URL of this API service (e.g., https://arena-book-api.onrender.com)
+    healthCheckPath: /health
