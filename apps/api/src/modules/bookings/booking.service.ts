@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../common/services/redis.service';
 import {
   CreateBookingDto,
   AdminCreateBookingDto,
@@ -33,7 +34,10 @@ function rethrowConflict(error: unknown): never {
 
 @Injectable()
 export class BookingService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+  ) {}
 
   async createBooking(playerId: string, dto: CreateBookingDto) {
     const slotDate = new Date(dto.date + 'T00:00:00.000Z');
@@ -119,6 +123,8 @@ export class BookingService {
             reason: `Booking at ${booking.arena.name}`,
           },
         });
+
+        await this.redis.del(`slots:available:court_${dto.courtId}:date_${dto.date}`);
 
         return booking;
       });
@@ -219,6 +225,8 @@ export class BookingService {
             reason: `Admin booking at ${arena.name}`,
           },
         });
+
+        await this.redis.del(`slots:available:court_${dto.courtId}:date_${dto.date}`);
 
         return booking;
       });
@@ -403,6 +411,9 @@ export class BookingService {
           },
         });
       }
+
+      const slotDateStr = booking.slot.date.toISOString().split('T')[0];
+      await this.redis.del(`slots:available:court_${booking.courtId}:date_${slotDateStr}`);
 
       return { message: 'Booking cancelled', refundAmount, refundPercent };
     });

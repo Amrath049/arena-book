@@ -21,7 +21,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   const [player, setPlayer] = useState<Player | null>(() => {
     const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
+    if (!stored || stored === 'undefined') return null;
+    try {
+      return JSON.parse(stored);
+    } catch {
+      localStorage.removeItem('user');
+      return null;
+    }
   });
 
   const login = (newToken: string, newPlayer: Player) => {
@@ -39,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated: !!token, player, token, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated: !!token && token !== 'undefined', player, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

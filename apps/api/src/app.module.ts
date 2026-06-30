@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { HealthController } from './health/health.controller';
+import { RedisModule } from './common/services/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ArenaModule } from './modules/arena/arena.module';
 import { GamesModule } from './modules/games/games.module';
@@ -17,6 +18,7 @@ import { PlayerModule } from './modules/player/player.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    RedisModule,
     PrismaModule,
     AuthModule,
     ArenaModule,

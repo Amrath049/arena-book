@@ -2,10 +2,14 @@ import { Injectable, NotFoundException, ConflictException, ForbiddenException } 
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSlotGroupDto, UpdateSlotGroupDto, CreateSlotDefinitionDto, UpdateSlotDefinitionDto, BlockSlotDto } from './dto/slot.dto';
 import { DAY_INDEX_TO_TYPE, SLOT_STATUS } from '../../common/constants/booking.constants';
+import { RedisService } from '../../common/services/redis.service';
 
 @Injectable()
 export class SlotService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+  ) {}
 
   async createSlotGroup(ownerId: string, dto: CreateSlotGroupDto) {
     const court = await this.prisma.court.findFirst({
@@ -99,6 +103,14 @@ export class SlotService {
   }
 
   async getAvailableSlots(courtId: string, date: string) {
+    const cacheKey = `slots:available:court_${courtId}:date_${date}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {}
+    }
+
     const parsedDate = new Date(date);
     const dayIndex = parsedDate.getUTCDay();
     const dayType = DAY_INDEX_TO_TYPE[dayIndex];
@@ -124,7 +136,7 @@ export class SlotService {
     });
     const slotMap = new Map(existingSlots.map(s => [s.startTime, s]));
 
-    return group.slotDefs.map(def => {
+    const result = group.slotDefs.map(def => {
       const existing = slotMap.get(def.startTime);
       const price = def.price ?? group.price ?? 0;
       return {
@@ -136,6 +148,9 @@ export class SlotService {
         slotDefinitionId: def.id,
       };
     });
+
+    await this.redis.set(cacheKey, JSON.stringify(result), 300);
+    return result;
   }
 
   async blockSlot(ownerId: string, dto: BlockSlotDto) {
@@ -151,21 +166,25 @@ export class SlotService {
       where: { courtId: dto.courtId, date: slotDate, startTime: dto.startTime },
     });
 
+    let resSlot;
     if (existing) {
       if (existing.status === SLOT_STATUS.BOOKED) throw new ConflictException('Slot is already booked');
-      return this.prisma.slot.update({ where: { id: existing.id }, data: { status: SLOT_STATUS.BLOCKED } });
+      resSlot = await this.prisma.slot.update({ where: { id: existing.id }, data: { status: SLOT_STATUS.BLOCKED } });
+    } else {
+      resSlot = await this.prisma.slot.create({
+        data: {
+          courtId: dto.courtId,
+          date: slotDate,
+          startTime: dto.startTime,
+          endTime: dto.endTime,
+          price: dto.price,
+          status: SLOT_STATUS.BLOCKED,
+        },
+      });
     }
 
-    return this.prisma.slot.create({
-      data: {
-        courtId: dto.courtId,
-        date: slotDate,
-        startTime: dto.startTime,
-        endTime: dto.endTime,
-        price: dto.price,
-        status: SLOT_STATUS.BLOCKED,
-      },
-    });
+    await this.redis.del(`slots:available:court_${dto.courtId}:date_${dto.date}`);
+    return resSlot;
   }
 
   async unblockSlot(ownerId: string, dto: BlockSlotDto) {
@@ -184,6 +203,8 @@ export class SlotService {
     if (!slot) throw new NotFoundException('Slot not found');
     if (slot.status !== SLOT_STATUS.BLOCKED) throw new ConflictException('Slot is not blocked');
 
-    return this.prisma.slot.update({ where: { id: slot.id }, data: { status: SLOT_STATUS.AVAILABLE } });
+    const resSlot = await this.prisma.slot.update({ where: { id: slot.id }, data: { status: SLOT_STATUS.AVAILABLE } });
+    await this.redis.del(`slots:available:court_${dto.courtId}:date_${dto.date}`);
+    return resSlot;
   }
 }

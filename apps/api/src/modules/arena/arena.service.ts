@@ -5,10 +5,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateArenaDto, UpdateArenaDto } from './dto/arena.details.dto';
+import { RedisService } from '../../common/services/redis.service';
 
 @Injectable()
 export class ArenaService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+  ) {}
 
   async createArena(ownerId: string, createArenaDto: CreateArenaDto) {
     // Verify that the owner (User) exists
@@ -45,6 +49,8 @@ export class ArenaService {
         },
       },
     });
+
+    await this.redis.invalidatePattern('arenas:list:*');
 
     return {
       message: 'Arena created successfully',
@@ -90,6 +96,9 @@ export class ArenaService {
         },
       },
     });
+
+    await this.redis.invalidatePattern('arenas:list:*');
+    await this.redis.del(`arenas:detail:${arenaId}`);
 
     return {
       message: 'Arena updated successfully',
@@ -201,6 +210,14 @@ export class ArenaService {
   }
 
   async listPublicArenas(city?: string, sport?: string, page = 1, limit = 20) {
+    const cacheKey = `arenas:list:city_${city || ''}:sport_${sport || ''}:page_${page}:limit_${limit}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {}
+    }
+
     const where: any = { isActive: true };
     if (city) where.city = { contains: city, mode: 'insensitive' };
     if (sport) {
@@ -223,10 +240,20 @@ export class ArenaService {
       this.prisma.arena.count({ where }),
     ]);
 
-    return { arenas, total, page, limit, pages: Math.ceil(total / limit) };
+    const result = { arenas, total, page, limit, pages: Math.ceil(total / limit) };
+    await this.redis.set(cacheKey, JSON.stringify(result), 600);
+    return result;
   }
 
   async getPublicArenaDetail(arenaId: string) {
+    const cacheKey = `arenas:detail:${arenaId}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {}
+    }
+
     const arena = await this.prisma.arena.findUnique({
       where: { id: arenaId, isActive: true },
       include: {
@@ -243,6 +270,7 @@ export class ArenaService {
     });
 
     if (!arena) throw new NotFoundException('Arena not found');
+    await this.redis.set(cacheKey, JSON.stringify(arena), 600);
     return arena;
   }
 }
