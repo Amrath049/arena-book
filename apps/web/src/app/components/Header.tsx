@@ -24,20 +24,22 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+      <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 w-full">
         <Link to="/" className="flex items-center space-x-2">
           <div className="text-2xl font-bold text-green-600">ArenaBook</div>
         </Link>
 
-        <nav className="hidden md:flex items-center space-x-8">
-          <Link to="/" className={`text-sm font-medium transition-colors hover:text-green-600 ${isActive('/') ? 'text-green-600' : 'text-gray-600'}`}>Home</Link>
-          <Link to="/arenas" className={`text-sm font-medium transition-colors hover:text-green-600 ${isActive('/arenas') ? 'text-green-600' : 'text-gray-600'}`}>Browse Arenas</Link>
-          {isAuthenticated && (
+        {isAuthenticated && (
+          <nav className="hidden md:flex items-center space-x-8">
             <Link to="/dashboard" className={`text-sm font-medium transition-colors hover:text-green-600 ${isActive('/dashboard') ? 'text-green-600' : 'text-gray-600'}`}>My Dashboard</Link>
-          )}
-        </nav>
+          </nav>
+        )}
 
-        <div className="hidden md:flex items-center space-x-3">
+        <div className="hidden md:flex items-center space-x-6">
+          {!isActive('/arenas') && (
+            <Link to="/arenas" className="text-sm font-medium transition-colors hover:text-green-600 text-gray-600">Browse Arenas</Link>
+          )}
+          
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -65,12 +67,12 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <>
+            <div className="flex items-center space-x-3">
               <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-green-600 transition-colors px-3 py-2">Log in</Link>
               <Link to="/register">
                 <Button size="sm" className="bg-green-600 hover:bg-green-700 rounded-full px-5 font-semibold">Sign up</Button>
               </Link>
-            </>
+            </div>
           )}
         </div>
 
@@ -79,8 +81,9 @@ export function Header() {
             <Button variant="outline" size="icon"><Menu className="h-5 w-5" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem asChild><Link to="/">Home</Link></DropdownMenuItem>
-            <DropdownMenuItem asChild><Link to="/arenas">Browse Arenas</Link></DropdownMenuItem>
+            {!isActive('/arenas') && (
+              <DropdownMenuItem asChild><Link to="/arenas">Browse Arenas</Link></DropdownMenuItem>
+            )}
             {isAuthenticated ? (
               <>
                 <DropdownMenuItem asChild><Link to="/dashboard">My Dashboard</Link></DropdownMenuItem>

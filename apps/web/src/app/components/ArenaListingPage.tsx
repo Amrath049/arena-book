@@ -29,34 +29,36 @@ export function ArenaListingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="max-w-7xl mx-auto px-4 py-8 w-full flex-grow">
         <h1 className="text-3xl font-bold mb-6">Browse Sports Arenas</h1>
-
-        <form onSubmit={handleSearch} className="flex gap-3 mb-8 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
+ 
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 mb-8 w-full sm:w-auto sm:justify-end">
+          <div className="relative w-full sm:w-64 max-w-none sm:max-w-xs">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input type="text" value={cityInput} onChange={e => setCityInput(e.target.value)}
               placeholder="Filter by city..."
-              className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-green-500 outline-none" />
+              className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 text-sm focus:border-gray-400 focus:ring-1 focus:ring-gray-400 outline-none transition-colors bg-white" />
           </div>
-          <div className="relative flex-1 min-w-[180px]">
+          <div className="relative w-full sm:w-64 max-w-none sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input type="text" value={sportInput} onChange={e => setSportInput(e.target.value)}
               placeholder="Filter by sport..."
-              className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-green-500 outline-none" />
+              className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 text-sm focus:border-gray-400 focus:ring-1 focus:ring-gray-400 outline-none transition-colors bg-white" />
           </div>
-          <Button type="submit" className="bg-green-600 hover:bg-green-700">Search</Button>
-          {(cityFilter || sportFilter) && (
-            <Button type="button" variant="outline" onClick={() => { setCityFilter(''); setSportFilter(''); setCityInput(''); setSportInput(''); }}>
-              Clear
-            </Button>
-          )}
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button type="submit" className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-initial">Search</Button>
+            {(cityFilter || sportFilter) && (
+              <Button type="button" variant="outline" className="flex-1 sm:flex-initial" onClick={() => { setCityFilter(''); setSportFilter(''); setCityInput(''); setSportInput(''); }}>
+                Clear
+              </Button>
+            )}
+          </div>
         </form>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1,2,3,4,5,6].map(i => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            {[1,2,3,4,5,6,7,8].map(i => (
               <div key={i} className="bg-white rounded-xl border h-64 animate-pulse">
                 <div className="h-40 bg-gray-200 rounded-t-xl" />
                 <div className="p-4 space-y-2">
@@ -71,7 +73,7 @@ export function ArenaListingPage() {
             <p className="text-gray-500 text-lg">No arenas found. Try adjusting your filters.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {arenas.map(arena => (
               <Link key={arena.id} to={`/arena/${arena.id}`}>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden">
@@ -105,6 +107,13 @@ export function ArenaListingPage() {
           </div>
         )}
       </div>
+
+      {/* ── Footer ── */}
+      <footer className="py-8 bg-gray-950 border-t border-gray-800 text-center text-gray-400 text-sm mt-auto">
+        <div className="max-w-7xl mx-auto px-4 w-full">
+          <p>&copy; {new Date().getFullYear()} ArenaBook. All rights reserved.</p>
+        </div>
+      </footer>
     </div>
   );
 }

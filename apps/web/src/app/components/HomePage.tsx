@@ -31,7 +31,7 @@ export function HomePage() {
   useEffect(() => {
     arenaService.listArenas({ limit: 6 }).then(r => {
       const list = r.data?.arenas ?? [];
-      setArenas(list.slice(0, 3));
+      setArenas(list.slice(0, 4));
       const uniqueCities = new Set(list.map((a: any) => a.city)).size;
       setStats({ arenas: r.data?.total ?? list.length, cities: uniqueCities });
     }).catch(() => {}).finally(() => setLoadingArenas(false));
@@ -59,7 +59,7 @@ export function HomePage() {
           backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.88) 0%, rgba(20,83,45,0.80) 50%, rgba(0,0,0,0.70) 100%), url('https://images.unsplash.com/photo-1471295253337-3ceaaedca402?w=1600&q=80')",
         }}
       >
-        <div className="container mx-auto px-4 py-20 text-center">
+        <div className="max-w-7xl mx-auto px-4 py-20 text-center w-full">
           <div className="inline-flex items-center gap-2 bg-green-500/20 border border-green-400/30 rounded-full px-4 py-1.5 mb-6">
             <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
             <span className="text-green-300 text-sm font-medium">Book instantly, play instantly</span>
@@ -128,7 +128,7 @@ export function HomePage() {
 
       {/* ── Sports categories ── */}
       <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
+        <div className="max-w-7xl mx-auto px-4 w-full">
           <div className="text-center mb-12">
             <span className="inline-block bg-green-50 text-green-700 text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full mb-4">Sports</span>
             <h2 className="text-4xl font-bold text-gray-900 mb-3">Browse by Sport</h2>
@@ -157,20 +157,22 @@ export function HomePage() {
 
       {/* ── Featured Arenas ── */}
       <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="flex items-end justify-between mb-10">
+        <div className="max-w-7xl mx-auto px-4 w-full">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 mb-1">Featured Arenas</h2>
               <p className="text-gray-500">Top-rated arenas on ArenaBook</p>
             </div>
-            <Link to="/arenas" className="flex items-center gap-1.5 text-green-600 hover:text-green-700 font-medium text-sm">
-              View all <ArrowRight className="h-4 w-4" />
+            <Link to="/arenas">
+              <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700 rounded-full px-5 py-1.5 text-sm font-semibold transition-colors flex items-center gap-2">
+                View All Arenas <ArrowRight className="h-4 w-4" />
+              </Button>
             </Link>
           </div>
 
           {loadingArenas ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[1,2,3].map(i => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+              {[1,2,3,4].map(i => (
                 <div key={i} className="rounded-2xl overflow-hidden border border-gray-100 animate-pulse">
                   <div className="h-48 bg-gray-200" />
                   <div className="p-4 space-y-2">
@@ -188,7 +190,7 @@ export function HomePage() {
               <Link to="/arenas"><Button className="mt-4 bg-green-600 hover:bg-green-700">Browse Arenas</Button></Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
               {arenas.map((arena: any) => (
                 <Link key={arena.id} to={`/arena/${arena.id}`} className="group">
                   <div className="rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl transition-all hover:-translate-y-1 bg-white">
@@ -230,7 +232,7 @@ export function HomePage() {
 
       {/* ── Why ArenaBook ── */}
       <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
+        <div className="max-w-7xl mx-auto px-4 w-full">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Why ArenaBook?</h2>
             <p className="text-gray-500 max-w-xl mx-auto">We make sports bookings effortless — for players and arena owners alike</p>
@@ -251,7 +253,7 @@ export function HomePage() {
 
       {/* ── How it works ── */}
       <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
+        <div className="max-w-7xl mx-auto px-4 w-full">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Book in 3 Simple Steps</h2>
           </div>
@@ -285,7 +287,7 @@ export function HomePage() {
 
       {/* ── Arena owner CTA ── */}
       <section className="py-20 bg-gradient-to-br from-gray-900 via-green-950 to-gray-900 text-white">
-        <div className="container mx-auto px-4 text-center">
+        <div className="max-w-7xl mx-auto px-4 text-center w-full">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-green-500/20 rounded-2xl mb-6">
             <Building2 className="h-7 w-7 text-green-400" />
           </div>
@@ -300,13 +302,20 @@ export function HomePage() {
               </Button>
             </Link>
             <Link to="/arenas">
-              <Button size="lg" variant="outline" className="border-gray-600 text-gray-300 hover:bg-white/10 px-8 rounded-xl">
+              <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white px-8 rounded-xl font-semibold border-none">
                 Browse as Player
               </Button>
             </Link>
           </div>
         </div>
       </section>
+
+      {/* ── Footer ── */}
+      <footer className="py-8 bg-gray-950 border-t border-gray-800 text-center text-gray-400 text-sm">
+        <div className="max-w-7xl mx-auto px-4 w-full">
+          <p>&copy; {new Date().getFullYear()} ArenaBook. All rights reserved.</p>
+        </div>
+      </footer>
 
     </div>
   );
