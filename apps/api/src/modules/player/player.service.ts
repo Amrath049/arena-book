@@ -16,7 +16,7 @@ export class PlayerService {
         phone: true,
         walletBalance: true,
         createdAt: true,
-        _count: { select: { bookings: true } },
+        _count: { select: { bookings: true, favourites: true } },
       },
     });
     if (!player) throw new NotFoundException('Player not found');

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, Heart, HeartOff, Images, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Heart, HeartOff, Images, X, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/tabs';
@@ -258,23 +258,29 @@ export function ArenaDetailPage() {
 
               <div className="space-y-1">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Sport</label>
-                <select value={selectedGameTypeId} onChange={e => {
-                  setSelectedGameTypeId(e.target.value);
-                  const game = arena.gameTypes.find((g: any) => g.id === e.target.value);
-                  if (game?.courts?.length) setSelectedCourtId(game.courts[0].id);
-                  else setSelectedCourtId('');
-                }} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-slate-50 outline-none hover:bg-slate-100/50 cursor-pointer font-medium text-slate-700">
-                  {arena.gameTypes?.map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </select>
+                <div className="relative">
+                  <select value={selectedGameTypeId} onChange={e => {
+                    setSelectedGameTypeId(e.target.value);
+                    const game = arena.gameTypes.find((g: any) => g.id === e.target.value);
+                    if (game?.courts?.length) setSelectedCourtId(game.courts[0].id);
+                    else setSelectedCourtId('');
+                  }} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-slate-50 outline-none hover:bg-slate-100/50 cursor-pointer font-medium text-slate-700 appearance-none pr-10">
+                    {arena.gameTypes?.map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+                </div>
               </div>
 
               {selectedGame?.courts?.length > 0 && (
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Court</label>
-                  <select value={selectedCourtId} onChange={e => setSelectedCourtId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-slate-50 outline-none hover:bg-slate-100/50 cursor-pointer font-medium text-slate-700">
-                    {selectedGame.courts.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <div className="relative">
+                    <select value={selectedCourtId} onChange={e => setSelectedCourtId(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-slate-50 outline-none hover:bg-slate-100/50 cursor-pointer font-medium text-slate-700 appearance-none pr-10">
+                      {selectedGame.courts.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+                  </div>
                 </div>
               )}
 
